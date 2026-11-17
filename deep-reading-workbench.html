@@ -364,16 +364,11 @@ const mmss=s=>Math.floor(s/60)+':'+pad(Math.floor(s%60));
 const COVERS=[['#0E9B82','#4ECFB6'],['#C77B4A','#E8A36B'],['#3B5E8C','#6D8FBE'],['#7A5B8C','#A98BC0'],['#8C6B3B','#C9A56A'],['#2F5D57','#5A968C']];
 
 const BOOKPOOL=[
-  {t:'刻意练习',a:'安德斯·艾利克森',c:'学习'},
-  {t:'被讨厌的勇气',a:'岸见一郎',c:'心理'},
-  {t:'思考，快与慢',a:'丹尼尔·卡尼曼',c:'认知'},
-  {t:'纳瓦尔宝典',a:'埃里克·乔根森',c:'财富'},
-  {t:'掌控习惯',a:'詹姆斯·克利尔',c:'习惯'},
-  {t:'原则',a:'瑞·达利欧',c:'决策'},
-  {t:'人类简史',a:'尤瓦尔·赫拉利',c:'历史'},
-  {t:'贫穷的本质',a:'阿比吉特·班纳吉',c:'经济'}
+  {t:'专注力练习',a:'示例作者',c:'学习'},
+  {t:'日常决策',a:'示例作者',c:'心理'},
+  {t:'精力管理',a:'示例作者',c:'认知'}
 ];
-const CHAP_NAMES=['为什么努力了还是没进步','天赋的真相','有目标的练习','反馈比重复重要','心理表征','走出舒适区','刻意练习怎么落地','一万小时的误读','导师与模仿','把练习变成日常'];
+const CHAP_NAMES=['问题从哪里来','常见的三个误解','换一个角度看','关键变量','一个具体例子','怎么开始','怎么坚持下去','怎么判断有效','常见的失败','落到每天的安排'];
 
 function demoData(){
   const books=[];
@@ -395,10 +390,10 @@ function demoData(){
     });
   }
   const notes=[
-    {id:uid(),book:'刻意练习',type:'金句',text:'天才不是天生的，而是练出来的。区别只在于有没有走出舒适区。',date:ymd(new Date(Date.now()-2*DAY)),stage:0},
-    {id:uid(),book:'被讨厌的勇气',type:'金句',text:'一切烦恼都来自人际关系，而自由就是被别人讨厌的勇气。',date:ymd(new Date(Date.now()-5*DAY)),stage:1},
-    {id:uid(),book:'刻意练习',type:'笔记',text:'反馈不是别人夸你，而是知道这一步到底哪里错了。自己练的时候得给自己找一个能对照的标准。',date:ymd(new Date(Date.now()-1*DAY)),stage:0},
-    {id:uid(),book:'思考，快与慢',type:'笔记',text:'快思考负责省力，慢思考负责纠错。大部分错误不是不会想，是懒得慢下来。',date:ymd(new Date(Date.now()-8*DAY)),stage:2}
+    {id:uid(),book:'专注力练习',type:'金句',text:'专注不是把时间拉长，而是把注意力收回来。',date:ymd(new Date(Date.now()-2*DAY)),stage:0},
+    {id:uid(),book:'日常决策',type:'金句',text:'好决定不靠一次想清楚，靠把选项摆到桌面上比较。',date:ymd(new Date(Date.now()-5*DAY)),stage:1},
+    {id:uid(),book:'专注力练习',type:'笔记',text:'每次只做一件事，做完再切换，比同时开五个窗口快。',date:ymd(new Date(Date.now()-1*DAY)),stage:0},
+    {id:uid(),book:'精力管理',type:'笔记',text:'精力低的时候做机械任务，精力高的时候做要动脑的事。',date:ymd(new Date(Date.now()-8*DAY)),stage:2}
   ];
   return {
     books,notes,
