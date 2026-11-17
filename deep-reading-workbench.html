@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="author" content="HR科技">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>深度读书工作台 · 演示版</title>
+<meta name="description" content="把一本书拆成对话来读：书架、逐章精读、金句笔记与间隔回顾，数据保存在本机。">
+<style>
+:root{
+  --bg:#F4F9F8; --bg2:#E9F3F0;
+  --card:#FFFFFF; --line:#E2EFEC; --line2:#CFE2DD;
+  --accent:#21B397; --accent-deep:#0E9B82; --accent-soft:#E3F6F1;
+  --ink:#26343A; --ink2:#5B6E76; --ink3:#8AA0A7;
+  --gold:#E8A36B; --danger:#D96A6A;
+  --shadow:0 8px 24px rgba(25,80,70,.07);
+  --shadow-sm:0 3px 10px rgba(25,80,70,.05);
+  --r:20px; --r-sm:14px; --tab:66px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","HarmonyOS Sans SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  background:linear-gradient(180deg,var(--bg) 0%,#FFFFFF 46%,var(--bg) 100%);
+  color:var(--ink); font-size:15px; line-height:1.6; min-height:100vh;-webkit-font-smoothing:antialiased;
+}
+#app{max-width:560px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:calc(var(--tab) + 24px)}
+#v-read{padding-bottom:150px}
+.view{padding:0 16px}
+[hidden]{display:none!important}
+button{font-family:inherit;border:0;background:none;cursor:pointer;color:inherit}
+input,select{font-family:inherit;border:0;outline:0;background:none;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+svg.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* 顶栏 */
+.top{position:sticky;top:0;z-index:9;padding:16px 16px 10px;background:linear-gradient(180deg,rgba(247,252,251,.96),rgba(247,252,251,.84) 70%,rgba(247,252,251,0));backdrop-filter:blur(10px)}
+.top-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;align-items:center;gap:9px}
+.logo{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--accent),#5FD3BC);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;box-shadow:0 6px 14px rgba(33,179,151,.24)}
+h1{font-size:19px;font-weight:700;letter-spacing:.3px;line-height:1.2}
+.sub{font-size:12px;color:var(--ink3);margin-top:2px}
+.icon-btn{width:36px;height:36px;border-radius:11px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink2);box-shadow:var(--shadow-sm)}
+
+/* 通用 */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-sm);padding:16px}
+.card+.card{margin-top:12px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px}
+.card-title .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.hint{font-size:12px;color:var(--ink3)}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:var(--accent-soft);color:var(--accent-deep)}
+.pill-gray{background:#F0F4F3;color:var(--ink2)}
+.pill-gold{background:#FDF1E6;color:#B8783A}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 18px;border-radius:14px;font-size:14px;font-weight:650;background:var(--ink);color:#fff}
+.btn:active{transform:scale(.97)}
+.btn-accent{background:linear-gradient(135deg,var(--accent),#45C8B0);box-shadow:0 8px 18px rgba(33,179,151,.22)}
+.btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line2)}
+.btn-sm{height:34px;padding:0 12px;font-size:12.5px;border-radius:11px}
+.row{display:flex;align-items:center;gap:10px}
+.between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.num{font-variant-numeric:tabular-nums}
+.bar{height:7px;border-radius:99px;background:#EDF3F2;overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),#5FD3BC);transition:width .3s}
+.segs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.segs::-webkit-scrollbar{display:none}
+.seg{flex:none;padding:7px 13px;border-radius:99px;font-size:12.5px;font-weight:600;background:#EFF4F3;color:var(--ink2)}
+.seg.on{background:var(--ink);color:#fff}
+
+/* 书架 */
+.hero{background:linear-gradient(150deg,#0E9B82 0%,#21B397 55%,#4ECFB6 100%);border-radius:24px;padding:18px;color:#fff;position:relative;overflow:hidden;box-shadow:0 16px 34px rgba(14,155,130,.22)}
+.hero:after{content:"";position:absolute;right:-50px;top:-60px;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.28),transparent 70%)}
+.hero .lab{font-size:12px;color:rgba(255,255,255,.75)}
+.hero .big{font-size:26px;font-weight:750;margin:3px 0 8px;letter-spacing:-.4px}
+.hero .meta{display:flex;gap:16px;font-size:12px;color:rgba(255,255,255,.82)}
+.hero .meta b{display:block;font-size:16px;color:#fff;font-variant-numeric:tabular-nums}
+.hero .go{margin-top:14px;height:40px;border-radius:13px;background:rgba(255,255,255,.95);color:var(--accent-deep);font-weight:700;font-size:13.5px;width:100%;display:flex;align-items:center;justify-content:center;gap:6px}
+
+.book{display:flex;gap:12px;padding:13px 0;border-bottom:1px dashed var(--line)}
+.book:last-child{border-bottom:0}
+.cover{width:58px;height:78px;border-radius:10px;flex:none;position:relative;overflow:hidden;box-shadow:0 6px 14px rgba(20,60,55,.16);display:flex;flex-direction:column;justify-content:space-between;padding:8px 7px}
+.cover .bt{font-size:11px;font-weight:700;line-height:1.25;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.2);max-height:44px;overflow:hidden}
+.cover .ba{font-size:9px;color:rgba(255,255,255,.85)}
+.cover:after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:rgba(0,0,0,.14)}
+.book-main{flex:1;min-width:0}
+.book-main .nm{font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.book-main .au{font-size:11.5px;color:var(--ink3);margin-top:1px}
+.book-main .st{display:flex;gap:10px;font-size:11px;color:var(--ink2);margin-top:7px}
+.book-main .bar{margin-top:7px;height:5px}
+.book-side{flex:none;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:6px}
+.book-side .go2{font-size:12px;font-weight:650;color:var(--accent-deep);background:var(--accent-soft);padding:6px 11px;border-radius:10px}
+
+/* 阅读页 */
+.reader-top{display:flex;align-items:center;gap:10px;padding:4px 0 12px}
+.reader-top .bk{flex:1;min-width:0}
+.reader-top .bk b{font-size:15.5px}
+.reader-top .bk span{display:block;font-size:11.5px;color:var(--ink3)}
+.chap{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px dashed var(--line)}
+.chap:last-child{border-bottom:0}
+.chap .no{width:26px;height:26px;border-radius:9px;background:var(--accent-soft);color:var(--accent-deep);font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.chap .nm{flex:1;font-size:13.5px;font-weight:600}
+.chap .dur{font-size:11.5px;color:var(--ink3)}
+.chap.cur .no{background:var(--accent);color:#fff}
+.chap.cur .nm{color:var(--accent-deep)}
+
+/* 对话 */
+.dialog{padding:4px 0}
+.line{display:flex;gap:9px;margin-bottom:14px;align-items:flex-start}
+.line.me{flex-direction:row-reverse}
+.ava{width:30px;height:30px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+.ava.a{background:linear-gradient(135deg,#21B397,#5FD3BC)}
+.ava.b{background:linear-gradient(135deg,#E8A36B,#F2C08D)}
+.bubble{max-width:78%;background:#F4FAF8;border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:13.5px;line-height:1.75;color:var(--ink)}
+.line.me .bubble{background:var(--accent-soft);border-color:#CBEDE5}
+.bubble .who{font-size:10.5px;color:var(--ink3);margin-bottom:3px}
+.quote{background:linear-gradient(135deg,#FFF9F1,#FDF1E6);border:1px solid #F6E2CE;border-radius:14px;padding:12px 14px;margin:6px 0 14px}
+.quote .qt{font-size:13.5px;line-height:1.8;color:#7A5B36;font-style:italic}
+.quote .qs{font-size:11px;color:#B08A5E;margin-top:6px;display:flex;justify-content:space-between}
+.quote .qs button{color:#C98A4B;font-size:11px;font-weight:600}
+
+/* 播放器 */
+.player{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:14px;position:sticky;bottom:calc(var(--tab) + 10px);z-index:8}
+.pl-row{display:flex;align-items:center;gap:11px}
+.play-btn{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4ECFB6);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 8px 18px rgba(33,179,151,.28)}
+.play-btn svg{width:20px;height:20px}
+.pl-main{flex:1;min-width:0}
+.pl-time{display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink3);margin-top:4px;font-variant-numeric:tabular-nums}
+.pl-bar{height:22px;display:flex;align-items:center;cursor:pointer;touch-action:none}
+.pl-track{height:5px;border-radius:99px;background:#EDF3F2;width:100%;position:relative}
+.pl-track i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,var(--accent),#5FD3BC)}
+.pl-track em{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;background:#fff;border:2.5px solid var(--accent);transform:translate(-50%,-50%);box-shadow:0 2px 6px rgba(33,179,151,.3)}
+.pl-tools{display:flex;gap:8px;margin-top:10px}
+.tool{flex:1;height:32px;border-radius:10px;background:#F3F8F7;font-size:11.5px;font-weight:600;color:var(--ink2)}
+.tool.on{background:var(--accent-soft);color:var(--accent-deep)}
+
+/* 笔记 */
+.note{border-left:3px solid var(--accent);padding:2px 0 2px 11px;margin-bottom:14px}
+.note .nt{font-size:13.5px;line-height:1.75}
+.note .nm2{font-size:11px;color:var(--ink3);margin-top:5px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.note .nm2 .tag{background:#F3F8F7;padding:1px 7px;border-radius:6px}
+.review{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px dashed var(--line)}
+.review:last-child{border-bottom:0}
+.review .due{font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;background:#FDF1E6;color:#B8783A;flex:none}
+.review .due.now{background:#FDECEA;color:var(--danger)}
+.review .main{flex:1;min-width:0}
+.review .main .t{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.review .main .s{font-size:11px;color:var(--ink3)}
+
+/* 我的 */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.stat{background:#F7FBFA;border:1px solid var(--line);border-radius:14px;padding:10px}
+.stat .k{font-size:11px;color:var(--ink3)}
+.stat .v{font-size:17px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums;color:var(--accent-deep)}
+
+/* tabbar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;pointer-events:none}
+.tabbar-in{pointer-events:auto;width:100%;max-width:560px;display:flex;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:12px;color:var(--ink3);font-size:11px;font-weight:600}
+.tab.on{color:var(--accent)}
+.tab svg{width:21px;height:21px}
+
+/* 弹层 */
+.mask{position:fixed;inset:0;background:rgba(20,45,42,.42);z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:560px;background:#fff;border-radius:24px 24px 0 0;padding:18px 18px calc(20px + env(safe-area-inset-bottom));max-height:86vh;overflow:auto;animation:up .22s cubic-bezier(.22,1,.36,1)}
+@keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+.sheet h3{font-size:16px;font-weight:700;margin-bottom:12px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--ink3);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;background:#F4F9F8;border-radius:12px;padding:11px 12px;font-size:14px;border:1px solid var(--line)}
+.field textarea{min-height:80px;resize:vertical;line-height:1.7}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#A9E2D6;background:#fff}
+.sheet-actions{display:flex;gap:10px;margin-top:6px}
+.sheet-actions .btn{flex:1}
+.empty{text-align:center;color:var(--ink3);font-size:13px;padding:22px 0}
+.foot{padding:22px 4px 8px;text-align:center;font-size:11.5px;color:var(--ink3);line-height:1.7}
+.toast{position:fixed;left:50%;bottom:calc(var(--tab) + 22px);transform:translate(-50%,10px);background:rgba(38,52,58,.93);color:#fff;font-size:13px;padding:9px 16px;border-radius:12px;z-index:40;opacity:0;transition:.22s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top">
+    <div class="top-row">
+      <div class="brand">
+        <span class="logo">读</span>
+        <div>
+          <h1>深度读书工作台</h1>
+          <div class="sub" id="todayLine">演示数据 · 保存在本机</div>
+        </div>
+      </div>
+      <div class="row" style="gap:6px">
+        <button class="icon-btn" id="btnInfo" aria-label="使用说明">
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>
+        </button>
+        <button class="icon-btn" id="btnReset" aria-label="重置演示数据">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 书架 -->
+  <section class="view" id="v-shelf">
+    <div class="hero">
+      <div class="lab">正在读</div>
+      <div class="big" id="heroBook">—</div>
+      <div class="meta">
+        <div><b id="heroMin">0</b>已读分钟</div>
+        <div><b id="heroLeft">0</b>剩余分钟</div>
+        <div><b id="heroStreak">0</b>连续天数</div>
+      </div>
+      <button class="go" id="btnContinue">
+        <svg class="ic" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M8 5l11 7-11 7z" fill="currentColor" stroke="none"/></svg>
+        继续上次的位置
+      </button>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-head">
+        <div class="card-title"><span class="dot"></span>我的书架</div>
+        <button class="btn btn-sm btn-ghost" id="btnAddBook">加一本</button>
+      </div>
+      <div class="segs" id="bookSegs" style="margin-bottom:6px"></div>
+      <div id="books"></div>
+    </div>
+    <div class="foot">一本书拆成十章，每章一段对话式解读，读不动的段落可以跳过</div>
+  </section>
+
+  <!-- 阅读 -->
+  <section class="view" id="v-read" hidden>
+    <div class="reader-top">
+      <button class="icon-btn" id="btnBackShelf" aria-label="返回">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="bk"><b id="readBookName">—</b><span id="readBookMeta">—</span></div>
+      <span class="pill" id="readPct">0%</span>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="dot"></span>章节</div>
+        <span class="hint" id="chapHint"></span>
+      </div>
+      <div id="chaps"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="dot"></span>对话式精读</div>
+        <button class="btn btn-sm btn-ghost" id="btnJumpQuote">跳到金句</button>
+      </div>
+      <div class="dialog" id="dialog"></div>
+    </div>
+
+    <div class="player">
+      <div class="pl-row">
+        <button class="play-btn" id="btnPlay">
+          <svg viewBox="0 0 24 24" id="playIcon"><path d="M8 5l11 7-11 7z" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <div class="pl-main">
+          <div class="pl-bar" id="plBar">
+            <div class="pl-track"><i id="plFill" style="width:0%"></i><em id="plDot" style="left:0%"></em></div>
+          </div>
+          <div class="pl-time"><span id="plCur">0:00</span><span id="plTotal">0:00</span></div>
+        </div>
+      </div>
+      <div class="pl-tools">
+        <button class="tool" id="btnSpeed">1.0×</button>
+        <button class="tool" id="btnTimer">定时 关</button>
+        <button class="tool" id="btnFav">收藏金句</button>
+      </div>
+    </div>
+    <div class="foot">演示版的音频是占位模拟，进度和章节记录是真实保存的</div>
+  </section>
+
+  <!-- 笔记 -->
+  <section class="view" id="v-note" hidden>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="dot"></span>间隔回顾</div>
+        <span class="pill-gold" id="duePill">今天 0 条</span>
+      </div>
+      <div class="hint" style="margin-bottom:8px">按 1 / 3 / 7 / 15 天自动排期，点「记住了」往后推一期。</div>
+      <div id="reviews"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="dot"></span>金句与笔记</div>
+        <button class="btn btn-sm btn-accent" id="btnAddNote">写一条</button>
+      </div>
+      <div class="segs" id="noteSegs" style="margin-bottom:10px"></div>
+      <div id="notes"></div>
+    </div>
+    <div class="foot">笔记不是抄书，是把一句话换成自己的话说出来</div>
+  </section>
+
+  <!-- 我的 -->
+  <section class="view" id="v-me" hidden>
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span class="dot"></span>阅读统计</div></div>
+      <div class="grid3">
+        <div class="stat"><div class="k">累计分钟</div><div class="v" id="meMin">0</div></div>
+        <div class="stat"><div class="k">读完本数</div><div class="v" id="meDone">0</div></div>
+        <div class="stat"><div class="k">笔记条数</div><div class="v" id="meNotes">0</div></div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="between" style="font-size:12.5px;margin-bottom:5px"><span>本月目标 600 分钟</span><span id="goalTxt">0%</span></div>
+        <div class="bar"><i id="goalBar" style="width:0%"></i></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span class="dot"></span>数据管理</div></div>
+      <div class="row" style="gap:9px">
+        <button class="btn btn-ghost" id="btnExport" style="flex:1">导出JSON</button>
+        <button class="btn btn-ghost" id="btnImport" style="flex:1">导入JSON</button>
+      </div>
+      <div style="margin-top:9px"><button class="btn btn-ghost" id="btnReset2" style="width:100%">重置为演示数据</button></div>
+      <input type="file" id="fileInput" accept=".json" hidden>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span class="dot"></span>关于</div></div>
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.85">
+        把一本书按章节拆开，用两个人的对话讲明白：一个人抛出生活里的疑问，另一个人用书里的观点回答。
+        配金句、笔记和间隔回顾，读完还能留下点东西。单文件HTML，双击就能用，数据只在本机。
+      </p>
+      <p style="font-size:12px;color:var(--ink3);margin-top:10px">版本 v1.0 · 演示数据 · 作者 HR科技</p>
+      <p style="font-size:12px;color:var(--ink3);margin-top:6px">本程序不联网、不发任何请求、不读取你的账户或文件。演示数据全部随机生成，不含任何真实个人信息。</p>
+    </div>
+  </section>
+</div>
+
+<div class="tabbar">
+  <div class="tabbar-in">
+    <button class="tab on" data-tab="shelf">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M4 5h6v14H4zM14 5h6v14h-6z"/></svg>书架
+    </button>
+    <button class="tab" data-tab="read">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M4 6h7v13H4zM13 6h7v13h-7z"/><path d="M11 6v13"/></svg>精读
+    </button>
+    <button class="tab" data-tab="note">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>笔记
+    </button>
+    <button class="tab" data-tab="me">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>我的
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='deep_read_wb_v1';
+const uid=()=>Math.random().toString(36).slice(2,9);
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>ymd(new Date());
+const DAY=864e5;
+const rnd=(a,b)=>Math.random()*(b-a)+a;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const mmss=s=>Math.floor(s/60)+':'+pad(Math.floor(s%60));
+
+const COVERS=[['#0E9B82','#4ECFB6'],['#C77B4A','#E8A36B'],['#3B5E8C','#6D8FBE'],['#7A5B8C','#A98BC0'],['#8C6B3B','#C9A56A'],['#2F5D57','#5A968C']];
+
+const BOOKPOOL=[
+  {t:'刻意练习',a:'安德斯·艾利克森',c:'学习'},
+  {t:'被讨厌的勇气',a:'岸见一郎',c:'心理'},
+  {t:'思考，快与慢',a:'丹尼尔·卡尼曼',c:'认知'},
+  {t:'纳瓦尔宝典',a:'埃里克·乔根森',c:'财富'},
+  {t:'掌控习惯',a:'詹姆斯·克利尔',c:'习惯'},
+  {t:'原则',a:'瑞·达利欧',c:'决策'},
+  {t:'人类简史',a:'尤瓦尔·赫拉利',c:'历史'},
+  {t:'贫穷的本质',a:'阿比吉特·班纳吉',c:'经济'}
+];
+const CHAP_NAMES=['为什么努力了还是没进步','天赋的真相','有目标的练习','反馈比重复重要','心理表征','走出舒适区','刻意练习怎么落地','一万小时的误读','导师与模仿','把练习变成日常'];
+
+function demoData(){
+  const books=[];
+  const n=3;
+  for(let i=0;i<n;i++){
+    const b=BOOKPOOL[i];
+    const chaps=CHAP_NAMES.slice(0,10).map((nm,idx)=>({
+      no:idx+1,name:nm,dur:Math.round(rnd(22,34)),done:false
+    }));
+    // 进度随机：第一本读到第4章，第二本第2章，第三本0
+    const doneCount=i===0?4:i===1?2:0;
+    chaps.forEach((c,k)=>{ c.done=k<doneCount; });
+    books.push({
+      id:uid(),title:b.t,author:b.a,cat:b.c,color:COVERS[i%COVERS.length],
+      total:chaps.reduce((s,c)=>s+c.dur,0),
+      chaps,cur:doneCount,pos:doneCount?Math.round(rnd(0.2,0.9)*100):0,
+      minutes:doneCount?chaps.slice(0,doneCount).reduce((s,c)=>s+c.dur,0):0,
+      lastRead:i===0?ymd(new Date(Date.now()-DAY)):ymd(new Date(Date.now()-3*DAY))
+    });
+  }
+  const notes=[
+    {id:uid(),book:'刻意练习',type:'金句',text:'天才不是天生的，而是练出来的。区别只在于有没有走出舒适区。',date:ymd(new Date(Date.now()-2*DAY)),stage:0},
+    {id:uid(),book:'被讨厌的勇气',type:'金句',text:'一切烦恼都来自人际关系，而自由就是被别人讨厌的勇气。',date:ymd(new Date(Date.now()-5*DAY)),stage:1},
+    {id:uid(),book:'刻意练习',type:'笔记',text:'反馈不是别人夸你，而是知道这一步到底哪里错了。自己练的时候得给自己找一个能对照的标准。',date:ymd(new Date(Date.now()-1*DAY)),stage:0},
+    {id:uid(),book:'思考，快与慢',type:'笔记',text:'快思考负责省力，慢思考负责纠错。大部分错误不是不会想，是懒得慢下来。',date:ymd(new Date(Date.now()-8*DAY)),stage:2}
+  ];
+  return {
+    books,notes,
+    readDays:[ymd(new Date(Date.now()-DAY)),ymd(new Date(Date.now()-2*DAY)),ymd(new Date(Date.now()-3*DAY)),ymd(new Date(Date.now()-4*DAY)),ymd(new Date(Date.now()-6*DAY))],
+    goal:600,curBook:books[0].id
+  };
+}
+function load(){
+  try{const raw=localStorage.getItem(KEY); if(raw){const d=JSON.parse(raw); if(d&&d.books) return d;}}catch(e){}
+  const d=demoData(); save(d); return d;
+}
+let D=load();
+function save(d){try{localStorage.setItem(KEY,JSON.stringify(d||D));}catch(e){}}
+
+let bookFilter='全部', noteFilter='全部';
+
+/* ============ 书架 ============ */
+function renderShelf(){
+  const d=new Date();
+  const wk='日一二三四五六'[d.getDay()];
+  document.getElementById('todayLine').textContent=`${d.getMonth()+1}月${d.getDate()}日 · 周${wk} · 演示数据`;
+  const cur=D.books.find(b=>b.id===D.curBook)||D.books[0];
+  if(cur){
+    document.getElementById('heroBook').textContent=cur.title;
+    const readMin=cur.chaps.filter(c=>c.done).reduce((s,c)=>s+c.dur,0);
+    document.getElementById('heroMin').textContent=readMin;
+    document.getElementById('heroLeft').textContent=cur.total-readMin;
+  }else{
+    document.getElementById('heroBook').textContent='书架还是空的';
+  }
+  // streak
+  // 今天没读也从昨天开始算，别把昨天之前的连续记录清零
+  let streak=0;
+  const startIdx=D.readDays.includes(today())?0:1;
+  for(let i=startIdx;i<90;i++){ const day=ymd(new Date(Date.now()-i*DAY)); if(D.readDays.includes(day)) streak++; else break; }
+  document.getElementById('heroStreak').textContent=streak;
+
+  const cats=['全部',...new Set(D.books.map(b=>b.cat))];
+  document.getElementById('bookSegs').innerHTML=cats.map(c=>`<button class="seg ${c===bookFilter?'on':''}" data-bfilter="${c}">${c}</button>`).join('');
+  const list=D.books.filter(b=>bookFilter==='全部'||b.cat===bookFilter);
+  document.getElementById('books').innerHTML=list.length?list.map(b=>{
+    const readMin=b.chaps.filter(c=>c.done).reduce((s,c)=>s+c.dur,0);
+    const pct=Math.round(readMin/b.total*100);
+    return `<div class="book">
+      <div class="cover" style="background:linear-gradient(150deg,${b.color[0]},${b.color[1]})">
+        <div class="bt">${b.title}</div><div class="ba">${b.author.split('·')[0]}</div>
+      </div>
+      <div class="book-main">
+        <div class="nm">${b.title}</div>
+        <div class="au">${b.author} · ${b.cat}</div>
+        <div class="st"><span>已读 ${readMin} 分钟</span><span>剩 ${b.total-readMin} 分钟</span><span>${pct}%</span></div>
+        <div class="bar"><i style="width:${pct}%"></i></div>
+      </div>
+      <div class="book-side"><button class="go2" data-open="${b.id}">${pct>=100?'回顾':'继续'}</button></div>
+    </div>`;
+  }).join(''):'<div class="empty">这个分类下还没有书</div>';
+}
+
+/* ============ 阅读 ============ */
+let player={book:null,t:0,total:0,playing:false,speed:1,timer:null,tick:null};
+function renderRead(){
+  const b=D.books.find(x=>x.id===D.curBook);
+  if(!b){ document.getElementById('readBookName').textContent='先选一本书'; return; }
+  document.getElementById('readBookName').textContent=b.title;
+  const readMin=b.chaps.filter(c=>c.done).reduce((s,c)=>s+c.dur,0);
+  document.getElementById('readBookMeta').textContent=`${b.author} · 共 ${b.total} 分钟 · 已读 ${readMin} 分钟`;
+  document.getElementById('readPct').textContent=Math.round(readMin/b.total*100)+'%';
+  const doneCount=b.chaps.filter(c=>c.done).length;
+  document.getElementById('chapHint').textContent=`${doneCount}/${b.chaps.length} 章`;
+  document.getElementById('chaps').innerHTML=b.chaps.map(c=>`
+    <div class="chap ${c.done?'done':''} ${c.no===doneCount+1?'cur':''}">
+      <div class="no">${c.done?'✓':c.no}</div>
+      <div class="nm">${c.name}</div>
+      <div class="dur">${c.dur}分钟</div>
+      <button class="hint" data-chap="${c.no}" style="color:${c.done?'var(--ink3)':'var(--accent-deep)'};font-weight:600">${c.done?'重读':'去读'}</button>
+    </div>`).join('');
+
+  // 对话
+  const chapter=b.chaps[Math.min(doneCount,b.chaps.length-1)];
+  document.getElementById('dialog').innerHTML=`
+    <div class="line"><div class="ava a">张</div><div class="bubble"><div class="who">老张</div>我一直有个疑问：我每天练两小时吉他，练了三年，还是弹不好一首完整的曲子。是我练得不够吗？</div></div>
+    <div class="line me"><div class="ava b">艾</div><div class="bubble"><div class="who">小艾</div>不是不够，是练的方式不对。你把两小时都花在"重复已经会的东西"上了。真正拉开差距的是<b>有目标的练习</b>——每次只针对一个卡点，练到能过为止。</div></div>
+    <div class="line"><div class="ava a">张</div><div class="bubble"><div class="who">老张</div>可我不知道卡在哪，弹着弹着就顺下来了，听着也还行。</div></div>
+    <div class="line me"><div class="ava b">艾</div><div class="bubble"><div class="who">小艾</div>这就是关键。没有<b>反馈</b>的练习等于没有练习。你得有一个能告诉你"这一小节错了"的东西——老师、录音、或者一个标准。</div></div>
+    <div class="quote" id="quoteBox">
+      <div class="qt">"天真的练习是：反复做一件事，然后指望能力自己长出来。有目的的练习是：每次都知道自己错在哪，然后只改那一点。"</div>
+      <div class="qs"><span>《${b.title}》· 第${chapter.no}章 ${chapter.name}</span><button id="btnFav2">收藏</button></div>
+    </div>
+    <div class="line"><div class="ava a">张</div><div class="bubble"><div class="who">老张</div>那我这三年的练习，是不是全白费了？</div></div>
+    <div class="line me"><div class="ava b">艾</div><div class="bubble"><div class="who">小艾</div>不白费，你有手感，只是没有<b>心理表征</b>。高手脑子里有一张"好"的样子，一弹出来就知道差多少。这张图是靠一次次纠错攒出来的，不是靠时间堆的。</div></div>`;
+
+  // player 初始化
+  if(!player.book||player.book!==b.id){
+    player.book=b.id; player.total=chapter.dur*60; player.t=Math.round(player.pos||0);
+    player.t=Math.round((b.pos/100)*player.total);
+  }
+  document.getElementById('plTotal').textContent=mmss(player.total);
+  updatePlayerUI();
+}
+
+function updatePlayerUI(){
+  const pct=player.total?player.t/player.total*100:0;
+  document.getElementById('plFill').style.width=pct+'%';
+  document.getElementById('plDot').style.left=pct+'%';
+  document.getElementById('plCur').textContent=mmss(player.t);
+  document.getElementById('playIcon').innerHTML=player.playing
+    ? '<path d="M7 5h4v14H7zM14 5h4v14h-4z" fill="currentColor" stroke="none"/>'
+    : '<path d="M8 5l11 7-11 7z" fill="currentColor" stroke="none"/>';
+}
+
+function togglePlay(){
+  player.playing=!player.playing;
+  clearInterval(player.tick);
+  if(player.playing){
+    player.tick=setInterval(()=>{
+      player.t+=player.speed;
+      if(player.t>=player.total){ player.t=player.total; player.playing=false; clearInterval(player.tick); onChapterEnd(); }
+      updatePlayerUI();
+      savePos();
+    },1000);
+  }
+  updatePlayerUI();
+}
+let posTimer=0;
+function savePos(){
+  clearTimeout(posTimer);
+  posTimer=setTimeout(()=>{
+    const b=D.books.find(x=>x.id===player.book);
+    if(b){ b.pos=player.total?Math.round(player.t/player.total*100):0; save(); }
+  },400);
+}
+function onChapterEnd(){
+  const b=D.books.find(x=>x.id===player.book);
+  if(!b) return;
+  const doneCount=b.chaps.filter(c=>c.done).length;
+  if(doneCount<b.chaps.length){
+    b.chaps[doneCount].done=true;
+    b.pos=0; player.t=0;
+    if(!D.readDays.includes(today())) D.readDays.push(today());
+    save(); renderRead(); renderShelf(); toast('这一章读完了，进度已保存');
+  }else{ toast('这本书已经读完了'); }
+}
+
+/* ============ 笔记 ============ */
+function stageDue(n){
+  const gaps=[0,1,3,7,15];
+  const d=new Date(n.date); d.setDate(d.getDate()+(gaps[Math.min(n.stage,4)]||15));
+  return ymd(d);
+}
+function renderNote(){
+  // 回顾
+  const dueList=D.notes.filter(n=>stageDue(n)<=today());
+  document.getElementById('duePill').textContent='今天 '+dueList.length+' 条';
+  document.getElementById('reviews').innerHTML=dueList.length?dueList.slice(0,5).map(n=>{
+    const overdue=stageDue(n)<today();
+    return `<div class="review">
+      <span class="due ${overdue?'now':''}">${overdue?'逾期':'今天'}</span>
+      <div class="main"><div class="t">${n.text}</div><div class="s">${n.book} · 第${n.stage+1}轮</div></div>
+      <button class="btn btn-sm btn-ghost" data-done-note="${n.id}">记住了</button>
+    </div>`;
+  }).join(''):'<div class="empty">今天没有要回顾的，明天再来</div>';
+
+  const types=['全部','金句','笔记'];
+  document.getElementById('noteSegs').innerHTML=types.map(t=>`<button class="seg ${t===noteFilter?'on':''}" data-nfilter="${t}">${t}</button>`).join('');
+  const list=D.notes.filter(n=>noteFilter==='全部'||n.type===noteFilter).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('notes').innerHTML=list.length?list.map(n=>`
+    <div class="note">
+      <div class="nt">${n.text}</div>
+      <div class="nm2"><span class="tag">${n.book}</span><span>${n.type}</span><span>${n.date}</span>
+        <button data-del-note="${n.id}" style="margin-left:auto;color:#C98A83">删除</button></div>
+    </div>`).join(''):'<div class="empty">还没有笔记</div>';
+}
+
+/* ============ 我的 ============ */
+function renderMe(){
+  const allMin=D.books.reduce((s,b)=>s+b.chaps.filter(c=>c.done).reduce((x,c)=>x+c.dur,0),0);
+  document.getElementById('meMin').textContent=allMin;
+  document.getElementById('meDone').textContent=D.books.filter(b=>b.chaps.every(c=>c.done)).length;
+  document.getElementById('meNotes').textContent=D.notes.length;
+  const pct=Math.min(Math.round(allMin/D.goal*100),100);
+  document.getElementById('goalTxt').textContent=pct+'%';
+  document.getElementById('goalBar').style.width=pct+'%';
+}
+
+function renderAll(){ renderShelf(); renderRead(); renderNote(); renderMe(); save(); }
+
+/* ============ 交互 ============ */
+const toastEl=document.getElementById('toast');
+let toastTimer=0;
+function toast(m){ toastEl.textContent=m; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toastEl.classList.remove('show'),1800); }
+
+function goTab(v){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===v));
+  ['shelf','read','note','me'].forEach(k=>document.getElementById('v-'+k).hidden=(k!==v));
+  window.scrollTo({top:0});
+}
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-tab]');
+  if(t){ goTab(t.dataset.tab); return; }
+  const bf=e.target.closest('[data-bfilter]');
+  if(bf){ bookFilter=bf.dataset.bfilter; renderShelf(); return; }
+  const op=e.target.closest('[data-open]');
+  if(op){ D.curBook=op.dataset.open; player.book=null; renderRead(); goTab('read'); return; }
+  const nf=e.target.closest('[data-nfilter]');
+  if(nf){ noteFilter=nf.dataset.nfilter; renderNote(); return; }
+  const ch=e.target.closest('[data-chap]');
+  if(ch){
+    const b=D.books.find(x=>x.id===D.curBook);
+    const c=b.chaps.find(x=>x.no==ch.dataset.chap);
+    player.total=c.dur*60; player.t=0; player.playing=false; clearInterval(player.tick);
+    updatePlayerUI(); toast('已切到第'+c.no+'章');
+    return;
+  }
+  const dn=e.target.closest('[data-done-note]');
+  if(dn){
+    const n=D.notes.find(x=>x.id===dn.dataset.doneNote);
+    if(n){ n.stage=Math.min(n.stage+1,4); n.date=today(); save(); renderNote(); toast('下一轮排期已更新'); }
+    return;
+  }
+  const del=e.target.closest('[data-del-note]');
+  if(del){ D.notes=D.notes.filter(x=>x.id!==del.dataset.delNote); save(); renderNote(); renderMe(); return; }
+});
+
+document.getElementById('btnContinue').addEventListener('click',()=>{ goTab('read'); });
+document.getElementById('btnBackShelf').addEventListener('click',()=>goTab('shelf'));
+document.getElementById('btnPlay').addEventListener('click',togglePlay);
+document.getElementById('btnSpeed').addEventListener('click',e=>{
+  const seq=[1,1.25,1.5,2];
+  player.speed=seq[(seq.indexOf(player.speed)+1)%seq.length];
+  e.target.textContent=player.speed.toFixed(2).replace(/0$/,'')+'×';
+  toast('倍速 '+player.speed+'×');
+});
+let timerMin=0;
+document.getElementById('btnTimer').addEventListener('click',e=>{
+  timerMin=timerMin===0?15:timerMin===15?30:0;
+  e.target.textContent=timerMin?('定时 '+timerMin+'分'):'定时 关';
+  e.target.classList.toggle('on',!!timerMin);
+});
+document.getElementById('btnFav').addEventListener('click',()=>{
+  const b=D.books.find(x=>x.id===D.curBook);
+  const q=document.querySelector('.quote .qt');
+  if(!b||!q) return;
+  D.notes.unshift({id:uid(),book:b.title,type:'金句',text:q.textContent.replace(/"/g,'').trim(),date:today(),stage:0});
+  save(); renderNote(); renderMe(); toast('金句已收藏');
+});
+document.getElementById('btnJumpQuote').addEventListener('click',()=>{
+  document.getElementById('quoteBox')?.scrollIntoView({behavior:'smooth',block:'center'});
+});
+
+/* 进度条拖拽 */
+const plBar=document.getElementById('plBar');
+let dragging=false;
+function setByX(clientX){
+  const r=plBar.getBoundingClientRect();
+  const p=Math.max(0,Math.min(1,(clientX-r.left)/r.width));
+  player.t=Math.round(p*player.total); updatePlayerUI(); savePos();
+}
+plBar.addEventListener('pointerdown',e=>{ dragging=true; plBar.setPointerCapture(e.pointerId); setByX(e.clientX); });
+plBar.addEventListener('pointermove',e=>{ if(dragging) setByX(e.clientX); });
+plBar.addEventListener('pointerup',e=>{ dragging=false; });
+plBar.addEventListener('pointercancel',()=>{ dragging=false; });
+
+/* 加书 / 加笔记 */
+document.getElementById('btnAddBook').addEventListener('click',()=>{
+  sheet('加一本书',`
+    <div class="field"><label>书名</label><input id="f-t" placeholder="例如：掌控习惯"></div>
+    <div class="field"><label>作者</label><input id="f-a" placeholder="詹姆斯·克利尔"></div>
+    <div class="two" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>分类</label><select id="f-c">${['学习','心理','认知','财富','习惯','决策','历史','经济','其他'].map(c=>`<option>${c}</option>`).join('')}</select></div>
+      <div class="field"><label>每章分钟</label><input id="f-d" type="number" value="28"></div>
+    </div>
+    <div class="hint">会自动生成十章占位章节，可以自己改名字。</div>`,
+    m=>{
+      const t=m.querySelector('#f-t').value.trim();
+      if(!t){toast('先写书名');return false;}
+      const dur=parseInt(m.querySelector('#f-d').value)||28;
+      const chaps=CHAP_NAMES.map((nm,i)=>({no:i+1,name:nm,dur:Math.round(dur*rnd(.85,1.15)),done:false}));
+      const b={id:uid(),title:t,author:m.querySelector('#f-a').value.trim()||'佚名',cat:m.querySelector('#f-c').value,color:pick(COVERS),chaps,cur:0,pos:0,total:chaps.reduce((s,c)=>s+c.dur,0),minutes:0,lastRead:today()};
+      D.books.push(b); D.curBook=b.id; renderAll(); toast('已加入书架');
+    });
+});
+
+document.getElementById('btnAddNote').addEventListener('click',()=>{
+  const books=D.books.map(b=>b.title);
+  sheet('写一条笔记',`
+    <div class="field"><label>类型</label><select id="f-type"><option>金句</option><option>笔记</option></select></div>
+    <div class="field"><label>来自哪本书</label><select id="f-book">${books.map(b=>`<option>${b}</option>`).join('')}</select></div>
+    <div class="field"><label>内容</label><textarea id="f-text" placeholder="写你真正记住的那句话"></textarea></div>`,
+    m=>{
+      const text=m.querySelector('#f-text').value.trim();
+      if(!text){toast('写点东西吧');return false;}
+      D.notes.unshift({id:uid(),book:m.querySelector('#f-book').value,type:m.querySelector('#f-type').value,text,date:today(),stage:0});
+      save(); renderNote(); renderMe(); toast('已保存');
+    });
+});
+
+/* 弹层 */
+function sheet(title,body,onOk,okText){
+  const mask=document.createElement('div'); mask.className='mask';
+  mask.innerHTML=`<div class="sheet"><h3>${title}</h3>${body}
+    <div class="sheet-actions"><button class="btn btn-ghost" data-cancel>取消</button>
+    <button class="btn btn-accent" data-ok>${okText||'保存'}</button></div></div>`;
+  document.body.appendChild(mask);
+  mask.addEventListener('click',ev=>{
+    if(ev.target===mask||ev.target.closest('[data-cancel]')) mask.remove();
+    if(ev.target.closest('[data-ok]')){ const r=onOk(mask); if(r!==false) mask.remove(); }
+  });
+  return mask;
+}
+
+document.getElementById('btnInfo').addEventListener('click',()=>{
+  sheet('使用说明',`<div style="font-size:13.5px;line-height:1.9;color:var(--ink2)">
+    <p><b>书架</b>：每本书按十章拆分，进度和剩余时间一眼能看到。</p>
+    <p><b>精读</b>：两个角色的对话，一个提生活里的疑问，一个用书里的观点接住。金句单独标出来，可一键收藏。</p>
+    <p><b>笔记</b>：金句和笔记混在一起，按 1/3/7/15 天排期回顾。</p>
+    <p><b>数据</b>：全部存本机，换设备前先导出。</p>
+    <p><b>演示音频</b>：进度条是模拟的，真正接语音合成需要后端，这里只保留交互。</p>
+  </div>`,()=>{},'知道了');
+});
+
+function resetDemo(){
+  if(!confirm('会用新的随机演示数据覆盖当前内容，继续吗？')) return;
+  D=demoData(); save(); player.book=null; renderAll(); toast('已重置');
+}
+document.getElementById('btnReset').addEventListener('click',resetDemo);
+document.getElementById('btnReset2').addEventListener('click',resetDemo);
+document.getElementById('btnExport').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='深度读书工作台-数据-'+today()+'.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000); toast('已导出');
+});
+document.getElementById('btnImport').addEventListener('click',()=>document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change',ev=>{
+  const f=ev.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{ const d=JSON.parse(r.result); if(!d||!d.books) throw 0; D=d; save(); player.book=null; renderAll(); toast('导入成功'); }
+    catch(e){ toast('文件读不出来'); }
+  };
+  r.readAsText(f); ev.target.value='';
+});
+
+renderAll();
+</script>
+</body>
+</html>
