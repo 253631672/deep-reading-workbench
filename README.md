@@ -1,5 +1,7 @@
 # 深度读书工作台
 
+[![在线预览](https://img.shields.io/badge/在线预览-打开-B07A3C)](https://253631672.github.io/deep-reading-workbench/) [![单文件](https://img.shields.io/badge/单文件-HTML-2B2B2B)](deep-reading-workbench.html) [![离线可用](https://img.shields.io/badge/离线-可用-4C8C4A)](#) [![License](https://img.shields.io/badge/license-MIT-8A6A3B)](LICENSE)
+
 一本书十章，每章用两个人的对话讲明白。
 
 单文件 HTML，双击就能用，离线可用，数据只存本机。
@@ -22,6 +24,7 @@
 
 ## 怎么用
 
+0. 在线预览：https://253631672.github.io/deep-reading-workbench/ ，不用下载，浏览器直接打开
 1. 下载 `deep-reading-workbench.html`
 2. 双击用浏览器打开，手机关联打开同一个文件
 3. 首次是演示数据：三本书各十章，外加四条笔记
@@ -44,6 +47,8 @@ deep-reading-workbench.html   程序本体，44KB
 screenshots/                  三张界面截图
 LICENSE
 ```
+
+如果这个工具帮你省了点时间，点个 Star 支持一下，也方便后面找到它。
 
 ## 许可
 
